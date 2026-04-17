@@ -134,20 +134,34 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Botón cámara ────────────────────────────── */
-    .btn-camara {
-      padding: 12px 14px;
-      background: #1a1a1a;
+    .btn-camara-grande {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 28px 20px;
+      background: var(--red);
       color: #fff;
       border: none;
-      border-radius: 10px;
-      font-size: 17px;
+      border-radius: 16px;
       cursor: pointer;
       transition: opacity .2s, transform .1s;
-      white-space: nowrap;
-      flex-shrink: 0;
+      box-shadow: 0 4px 18px rgba(230,51,41,.25);
     }
-    .btn-camara:hover  { opacity: .82; }
-    .btn-camara:active { transform: scale(.96); }
+    .btn-camara-grande:hover  { opacity: .88; }
+    .btn-camara-grande:active { transform: scale(.97); }
+    .btn-camara-icono {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+    .btn-camara-texto {
+      font-family: 'Nunito', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: .3px;
+    }
 
     /* ── Overlay escáner QR ──────────────────────── */
     .qr-overlay {
@@ -480,30 +494,12 @@
   <h2 class="screen-title">BÚSQUEDA DE PEDIDO</h2>
 
   <!-- ── Input + botón Iniciar Proceso ─────────── -->
-  <div class="tracking-box">
-    <label class="field-lbl">Ingresa tu ID de seguimiento</label>
-    <div class="input-row">
-      <input
-        type="text"
-        id="tracking-input"
-        placeholder="#00001"
-        class="field"
-        style="text-transform:uppercase"
-        maxlength="10"
-      />
-      <button class="btn-camara" id="btn-camara" onclick="abrirEscaner()" title="Escanear código QR">
-        📷
-      </button>
-      <button class="btn-iniciar" id="btn-buscar" onclick="iniciarBusqueda()">
-        Buscar
-      </button>
-    </div>
-    <p style="font-size:12px;color:#9ca3af;">Escribe el folio o <strong style="color:var(--red);cursor:pointer" onclick="abrirEscaner()">escanea el código QR</strong></p>
-  </div>
+  <!-- Input oculto para recibir el folio del QR -->
+  <input type="hidden" id="tracking-input" />
 
-  <!-- ── Nuevo botón Iniciar Proceso (sin funcionalidad) ── -->
-  <button class="btn-iniciar" style="width:100%">
-    Iniciar Proceso
+  <button class="btn-camara-grande" onclick="abrirEscaner()">
+    <span class="btn-camara-icono">📷</span>
+    <span class="btn-camara-texto">Escanear código QR</span>
   </button>
 
   <!-- ── Resultado ─────────────────────────────── -->
@@ -876,11 +872,6 @@ function cerrarEscaner() {
   const video = document.getElementById("qr-video");
   video.srcObject = null;
 }
-
-/* Enter en el input */
-document.getElementById("tracking-input").addEventListener("keydown", e => {
-  if (e.key === "Enter") iniciarBusqueda();
-});
 
 /* Cerrar foto con ESC */
 document.addEventListener("keydown", e => {
