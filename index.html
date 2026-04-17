@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Búsqueda de Pedido — Planchado Express</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Variables ─────────────────────────────── */
+      :root {
+    --bg:        #ede8e3;
+    --surface:   #ffffff;
+    --red:       #e63329;
+    --red-dark:  #c0281f;
+    --dark:      #1a1a1a;
+    --dark-2:    #2d2d2d;
+    --gray:      #888;
+    --gray-lt:   #ccc;
+    --border:    #d8d2cb;
+    --shadow:    0 2px 12px rgba(0,0,0,.10);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.16);
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 22px;
+    --r-xl: 32px;
+    --t: .2s ease;
+    }
+
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: block;
+      padding: 24px 20px 48px;
+    }
+
+    /* ── Phone wrap — modo vertical full width ── */
+    .phone-wrap {
+      width: 100%;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Topbar ─────────────────────────────────── */
+    .topbar-sm {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    .iron-icon { width: 32px; height: 24px; }
+
+    /* ── Títulos ────────────────────────────────── */
+    .screen-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: var(--dark);
+      text-align: center;
+    }
+
+    /* ── Tracking box (input + botón) ───────────── */
+    .tracking-box {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .field-lbl {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .field {
+      flex: 1;
+      padding: 12px 14px;
+      border: 2px solid var(--gray-lt);
+      border-radius: 10px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      outline: none;
+      transition: border-color .2s;
+      color: var(--dark);
+    }
+    .field:focus { border-color: var(--red); }
+
+    /* Botón "Iniciar Proceso" — NO negro, rojo del proyecto */
+    .btn-iniciar {
+      padding: 12px 20px;
+      background: var(--red);
+      color:  #ede8e3;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn-iniciar:hover  { opacity: .88; }
+    .btn-iniciar:active { transform: scale(.97); }
+    .btn-iniciar:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Spinner inline en el botón */
+    .btn-spin {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Botón cámara ────────────────────────────── */
+    .btn-camara {
+      padding: 12px 14px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-camara:hover  { opacity: .82; }
+    .btn-camara:active { transform: scale(.96); }
+
+    /* ── Overlay escáner QR ──────────────────────── */
+    .qr-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    .qr-overlay.hidden { display: none; }
+
+    .qr-scanner-box {
+      background: #fff;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 360px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+
+    .qr-scanner-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .qr-scanner-title {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      color: #1a1a1a;
+    }
+
+    .qr-close-btn {
+      background: #f0f0f0;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #555;
+      transition: background .15s;
+    }
+    .qr-close-btn:hover { background: #e0e0e0; }
+
+    .qr-video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .qr-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Visor con esquinas animadas */
+    .qr-viewfinder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-corner {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-color: var(--red);
+      border-style: solid;
+      border-width: 0;
+    }
+    .qr-tl { top: 20%; left: 15%; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+    .qr-tr { top: 20%; right: 15%; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+    .qr-bl { bottom: 20%; left: 15%; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+    .qr-br { bottom: 20%; right: 15%; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+
+    .qr-hint {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      margin: 10px 18px 4px;
+    }
+
+    .qr-status {
+      min-height: 28px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--red);
+      padding: 4px 18px 14px;
+    }
+
+    /* ── Info cards (resultado) ─────────────────── */
+    .info-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+    .info-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .info-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-top: 2px;
+    }
+    .tracking-id-big {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 4px;
+      color: var(--red);
+    }
+    .info-hint {
+      font-size: 12px;
+      color: var(--gray);
+      margin-top: 4px;
+    }
+
+    /* ── Timeline de estados ────────────────────── */
+    .timeline-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .timeline-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 16px;
+    }
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .tl-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      position: relative;
+    }
+    /* línea vertical entre pasos */
+    .tl-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 17px;
+      top: 36px;
+      width: 2px;
+      height: calc(100% - 4px);
+      background: var(--gray-lt);
+      transition: background .4s;
+    }
+    .tl-step.done:not(:last-child)::after  { background: #22c55e; }
+    .tl-step.active:not(:last-child)::after { background: var(--gray-lt); }
+
+    .tl-dot {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      background: var(--gray-lt);
+      transition: background .4s, transform .3s;
+      position: relative;
+      z-index: 1;
+    }
+    .tl-step.done   .tl-dot  { background: #22c55e; }
+    .tl-step.active .tl-dot  { background: var(--red); transform: scale(1.15); box-shadow: 0 0 0 4px rgba(230,51,41,.15); }
+
+    .tl-body {
+      padding: 4px 0 20px;
+      flex: 1;
+    }
+    .tl-label {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--dark);
+      line-height: 1.2;
+    }
+    .tl-step.inactive .tl-label { color: var(--gray); font-weight: 600; }
+    .tl-sub {
+      font-size: 12px;
+      color: var(--gray);
+      margin-top: 2px;
+    }
+
+    /* Pulsing dot para estado activo */
+    .pulse-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--red);
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%   { opacity: .8; transform: scale(1); }
+      100% { opacity: 0;  transform: scale(1.6); }
+    }
+
+    /* ── Fotos ──────────────────────────────────── */
+    .fotos-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .foto-thumb {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .foto-thumb:hover { opacity: .85; }
+
+    /* ── Estado badge ───────────────────────────── */
+    .estado-big {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .b-pendiente  { background: #fef9c3; color: #854d0e; }
+    .b-en_proceso { background: #dbeafe; color: #1e40af; }
+    .b-planchado  { background: #e0f2fe; color: #0369a1; }
+    .b-listo      { background: #dcfce7; color: #166534; }
+    .b-entregado  { background: #f3f4f6; color: #374151; }
+
+    /* ── Empty / error msg ──────────────────────── */
+    .empty-msg {
+      text-align: center;
+      color: var(--gray);
+      font-size: 14px;
+      padding: 12px 0;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ── Visor foto ─────────────────────────────── */
+    .photo-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+    }
+    .photo-overlay img {
+      max-width: 90vw; max-height: 90vh;
+      border-radius: 12px;
+    }
+    .photo-overlay-close {
+      position: absolute; top: 16px; right: 20px;
+      background: none; border: none; color: #fff;
+      font-size: 28px; cursor: pointer; line-height: 1;
+    }
+
+    /* ── Toast ──────────────────────────────────── */
+    #toast-wrap {
+      position: fixed; top: 16px; right: 16px;
+      z-index: 9998; display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      padding: 12px 18px; border-radius: 10px;
+      font-size: 14px; font-weight: 700;
+      color: #fff; display: flex; gap: 8px; align-items: center;
+      animation: slide-in .25s ease;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    }
+    .toast.success { background: #22c55e; }
+    .toast.error   { background: var(--red); }
+    .toast.info    { background: var(--dark); }
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+</head>
+<body>
+
+<div class="phone-wrap">
+
+  <!-- Topbar con logo original -->
+  <div class="topbar-sm">
+    <svg class="iron-icon" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 40 Q10 20 35 20 L65 20 Q72 20 72 27 L72 34 Q72 40 65 40 Z" fill="#e63329"/>
+      <rect x="26" y="40" width="36" height="6" rx="3" fill="#e63329"/>
+      <path d="M35 20 L28 8" stroke="#e63329" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="28" cy="8" r="3" fill="#e63329"/>
+      <circle cx="45" cy="30" r="2" fill="white" opacity="0.7"/>
+      <circle cx="53" cy="30" r="2" fill="white" opacity="0.7"/>
+      <circle cx="61" cy="30" r="2" fill="white" opacity="0.7"/>
+    </svg>
+    <span style="font-family:'Bebas Neue';font-size:16px;letter-spacing:2px;color:#1a1a2e">PLANCHADO EXPRESS</span>
+  </div>
+
+  <!-- Título de la página -->
+  <h2 class="screen-title">BÚSQUEDA DE PEDIDO</h2>
+
+  <!-- ── Input + botón Iniciar Proceso ─────────── -->
+  <div class="tracking-box">
+    <label class="field-lbl">Ingresa tu ID de seguimiento</label>
+    <div class="input-row">
+      <input
+        type="text"
+        id="tracking-input"
+        placeholder="#00001"
+        class="field"
+        style="text-transform:uppercase"
+        maxlength="10"
+      />
+      <button class="btn-camara" id="btn-camara" onclick="abrirEscaner()" title="Escanear código QR">
+        📷
+      </button>
+      <button class="btn-iniciar" id="btn-buscar" onclick="iniciarBusqueda()">
+        Buscar
+      </button>
+    </div>
+    <p style="font-size:12px;color:#9ca3af;">Escribe el folio o <strong style="color:var(--red);cursor:pointer" onclick="abrirEscaner()">escanea el código QR</strong></p>
+  </div>
+
+  <!-- ── Nuevo botón Iniciar Proceso (sin funcionalidad) ── -->
+  <button class="btn-iniciar" style="width:100%">
+    Iniciar Proceso
+  </button>
+
+  <!-- ── Resultado ─────────────────────────────── -->
+  <div id="tracking-result" class="hidden">
+
+    <!-- Folio + datos básicos -->
+    <div class="info-card">
+      <p class="info-lbl">ID de Seguimiento</p>
+      <p class="tracking-id-big" id="tr-id">#00001</p>
+      <p class="info-hint">con él puedes consultar tu status en cualquier momento</p>
+    </div>
+
+    <div class="info-card" style="margin-top:0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <p class="info-lbl">Prenda</p>
+          <p class="info-val" id="tr-prenda">—</p>
+        </div>
+        <div>
+          <p class="info-lbl">Material</p>
+          <p class="info-val" id="tr-material">—</p>
+        </div>
+        <div>
+          <p class="info-lbl">Cliente</p>
+          <p class="info-val" id="tr-cliente">—</p>
+        </div>
+        <div>
+          <p class="info-lbl">Entrega estimada</p>
+          <p class="info-val" id="tr-entrega">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Timeline de proceso ─────────────────── -->
+    <div class="timeline-card">
+      <p class="timeline-title">Proceso de tu prenda</p>
+      <div class="timeline" id="timeline-wrap">
+        <!-- generado por JS -->
+      </div>
+    </div>
+
+    <!-- Fotos (si el pedido tiene) -->
+    <div class="info-card hidden" id="fotos-card">
+      <p class="info-lbl" style="margin-bottom:4px">Fotos del proceso</p>
+      <div class="fotos-grid" id="fotos-grid"></div>
+    </div>
+
+    <!-- Botón refrescar -->
+    <button
+      onclick="refrescarEstado()"
+      style="
+        width:100%;padding:12px;
+        background:#fff;border:2px solid #e63329;
+        color:#e63329;border-radius:10px;
+        font-family:'Nunito';font-size:14px;font-weight:800;
+        cursor:pointer;transition:background .2s;
+      "
+      onmouseover="this.style.background='#fef2f2'"
+      onmouseout="this.style.background='#fff'"
+    >
+      🔄 Actualizar estado
+    </button>
+
+  </div><!-- /tracking-result -->
+
+  <!-- Mensaje vacío -->
+  <p id="tracking-empty" class="empty-msg">
+    Ingresa tu ID para ver el estado de tu prenda.
+  </p>
+
+</div><!-- /phone-wrap -->
+
+<!-- Visor de foto -->
+<div id="photo-overlay" class="photo-overlay hidden">
+  <button class="photo-overlay-close" onclick="closePhoto()">✕</button>
+  <img id="photo-overlay-img" src="" alt="Foto del pedido"/>
+</div>
+
+<!-- Toast container -->
+<div id="toast-wrap"></div>
+
+<script>
+/* ════════════════════════════════════════════
+   CONFIGURACIÓN
+════════════════════════════════════════════ */
+const BACKEND_URL = "https://docker-planchaduria.onrender.com";
+
+// Secuencia de estados en orden
+const ESTADOS_ORDEN = [
+  {
+    key:   "pendiente",
+    emoji: "📋",
+    label: "Pedido recibido",
+    sub:   "Tu prenda fue registrada en el sistema"
+  },
+  {
+    key:   "en_proceso",
+    emoji: "🔄",
+    label: "En proceso",
+    sub:   "Tu prenda está siendo preparada"
+  },
+  {
+    key:   "planchado",
+    emoji: "👔",
+    label: "Planchado",
+    sub:   "Tu prenda está siendo planchada"
+  },
+  {
+    key:   "listo",
+    emoji: "✅",
+    label: "Listo para entrega",
+    sub:   "Puedes pasar a recoger tu prenda"
+  },
+  {
+    key:   "entregado",
+    emoji: "🏠",
+    label: "Entregado",
+    sub:   "Prenda entregada con éxito"
+  }
+];
+
+let folioActual = null;
+
+/* ════════════════════════════════════════════
+   FUNCIÓN PRINCIPAL — Iniciar Proceso
+════════════════════════════════════════════ */
+async function iniciarBusqueda() {
+  const raw   = document.getElementById("tracking-input").value.trim().toUpperCase();
+  const folio = raw.startsWith("#") ? raw : "#" + raw;
+
+  if (!folio || folio === "#") {
+    toast("Ingresa un ID de seguimiento.", "error");
+    return;
+  }
+
+  // Resetear vista
+  document.getElementById("tracking-result").classList.add("hidden");
+  document.getElementById("tracking-empty").style.display = "none";
+
+  // Estado cargando en botón
+  const btn = document.getElementById("btn-buscar");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-spin"></span> Buscando…';
+
+  try {
+    const data = await apiFetch(`/api/orders/track/${encodeURIComponent(folio)}`);
+    const p    = data.order;
+
+    folioActual = folio;
+
+    // Datos básicos
+    setText("tr-id",       p.Folio      || folio);
+    setText("tr-prenda",   p.tipoPrenda || "—");
+    setText("tr-material", p.material   || "—");
+    setText("tr-cliente",  p.cliente    || "—");
+    setText("tr-entrega",  fmtDate(p.FechaEntrega));
+
+    // Renderizar timeline
+    renderTimeline(p.Estado);
+
+    // Fotos (si existen)
+    renderFotos(p.fotos || []);
+
+    document.getElementById("tracking-result").classList.remove("hidden");
+    toast("Pedido encontrado.", "success");
+
+  } catch (err) {
+    document.getElementById("tracking-empty").textContent =
+      `No se encontró ningún pedido con ID ${folio}.`;
+    document.getElementById("tracking-empty").style.display = "block";
+    toast(err.message || "Pedido no encontrado.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Buscar";
+  }
+}
+
+/* ════════════════════════════════════════════
+   REFRESCAR (botón secundario)
+════════════════════════════════════════════ */
+async function refrescarEstado() {
+  if (!folioActual) return;
+  try {
+    const data = await apiFetch(`/api/orders/track/${encodeURIComponent(folioActual)}`);
+    const p    = data.order;
+    renderTimeline(p.Estado);
+    setText("tr-entrega", fmtDate(p.FechaEntrega));
+    renderFotos(p.fotos || []);
+    toast("Estado actualizado.", "info");
+  } catch (err) {
+    toast("No se pudo actualizar.", "error");
+  }
+}
+
+/* ════════════════════════════════════════════
+   TIMELINE
+════════════════════════════════════════════ */
+function renderTimeline(estadoActual) {
+  const wrap  = document.getElementById("timeline-wrap");
+  const idxActual = ESTADOS_ORDEN.findIndex(e => e.key === estadoActual);
+
+  wrap.innerHTML = ESTADOS_ORDEN.map((e, i) => {
+    let cls   = "inactive";
+    let dot   = `<span style="font-size:15px">${e.emoji}</span>`;
+    let pulse = "";
+
+    if (i < idxActual) {
+      cls = "done";
+      dot = `<span style="font-size:15px">✓</span>`;
+    } else if (i === idxActual) {
+      cls   = "active";
+      pulse = `<div class="pulse-ring"></div>`;
+    }
+
+    return `
+      <div class="tl-step ${cls}">
+        <div class="tl-dot">${pulse}${dot}</div>
+        <div class="tl-body">
+          <p class="tl-label">${e.label}</p>
+          <p class="tl-sub">${i === idxActual ? '<strong style="color:#e63329">Estado actual</strong> · ' : ""}${e.sub}</p>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+/* ════════════════════════════════════════════
+   FOTOS
+════════════════════════════════════════════ */
+function renderFotos(fotos) {
+  const card = document.getElementById("fotos-card");
+  const grid = document.getElementById("fotos-grid");
+
+  if (!fotos || fotos.length === 0) {
+    card.classList.add("hidden");
+    return;
+  }
+
+  card.classList.remove("hidden");
+  grid.innerHTML = fotos.map(f => {
+    const src = f.url || (BACKEND_URL + f.relative_url);
+    return `<img
+      class="foto-thumb"
+      src="${esc(src)}"
+      alt="Foto del proceso"
+      onclick="openPhoto('${esc(src)}')"
+    />`;
+  }).join("");
+}
+
+function openPhoto(src) {
+  document.getElementById("photo-overlay-img").src = src;
+  document.getElementById("photo-overlay").classList.remove("hidden");
+}
+function closePhoto() {
+  document.getElementById("photo-overlay").classList.add("hidden");
+  document.getElementById("photo-overlay-img").src = "";
+}
+
+/* ════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════ */
+async function apiFetch(path) {
+  const res = await fetch(`${BACKEND_URL}${path}`, {
+    headers: { "Content-Type": "application/json" }
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || "Error del servidor");
+  }
+  return data;
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function fmtDate(value) {
+  if (!value) return "—";
+  const d = new Date(value.includes("T") ? value : `${value}T00:00:00`);
+  if (isNaN(d)) return value;
+  return d.toLocaleDateString("es-MX", { year: "numeric", month: "2-digit", day: "2-digit" });
+}
+
+function toast(msg, type = "info") {
+  const icons = { success: "✅", error: "❌", info: "ℹ️" };
+  const wrap  = document.getElementById("toast-wrap");
+  const el    = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type] || ""}</span><span>${esc(msg)}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+/* ════════════════════════════════════════════
+   ESCÁNER QR
+════════════════════════════════════════════ */
+let qrStream      = null;
+let qrAnimFrame   = null;
+let qrDetectado   = false;
+
+async function abrirEscaner() {
+  qrDetectado = false;
+  document.getElementById("qr-status").textContent = "";
+  document.getElementById("qr-scanner-overlay").classList.remove("hidden");
+
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+    const video = document.getElementById("qr-video");
+    video.srcObject = qrStream;
+    video.play();
+    video.addEventListener("loadedmetadata", escanearFrame);
+  } catch (err) {
+    document.getElementById("qr-status").textContent = "⚠️ No se pudo acceder a la cámara.";
+    console.error(err);
+  }
+}
+
+function escanearFrame() {
+  const video = document.getElementById("qr-video");
+  if (video.readyState !== video.HAVE_ENOUGH_DATA || qrDetectado) return;
+
+  const canvas = document.createElement("canvas");
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, imageData.width, imageData.height, {
+    inversionAttempts: "dontInvert"
+  });
+
+  if (code && code.data) {
+    qrDetectado = true;
+    const folio = code.data.trim().toUpperCase();
+    document.getElementById("qr-status").textContent = "✅ QR detectado: " + folio;
+
+    // Poner el folio en el input y buscar automáticamente
+    setTimeout(() => {
+      cerrarEscaner();
+      const input = document.getElementById("tracking-input");
+      input.value = folio.startsWith("#") ? folio.replace("#", "") : folio;
+      iniciarBusqueda();
+    }, 700);
+    return;
+  }
+
+  qrAnimFrame = requestAnimationFrame(escanearFrame);
+}
+
+function cerrarEscaner() {
+  document.getElementById("qr-scanner-overlay").classList.add("hidden");
+  if (qrStream) {
+    qrStream.getTracks().forEach(t => t.stop());
+    qrStream = null;
+  }
+  if (qrAnimFrame) {
+    cancelAnimationFrame(qrAnimFrame);
+    qrAnimFrame = null;
+  }
+  const video = document.getElementById("qr-video");
+  video.srcObject = null;
+}
+
+/* Enter en el input */
+document.getElementById("tracking-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") iniciarBusqueda();
+});
+
+/* Cerrar foto con ESC */
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closePhoto();
+});
+</script>
+<!-- MODAL ESCÁNER QR -->
+<div id="qr-scanner-overlay" class="qr-overlay hidden">
+  <div class="qr-scanner-box">
+    <div class="qr-scanner-hd">
+      <span class="qr-scanner-title">📷 Escanear código QR</span>
+      <button class="qr-close-btn" onclick="cerrarEscaner()">✕</button>
+    </div>
+    <div class="qr-video-wrap">
+      <video id="qr-video" class="qr-video" autoplay playsinline muted></video>
+      <div class="qr-viewfinder">
+        <div class="qr-corner qr-tl"></div>
+        <div class="qr-corner qr-tr"></div>
+        <div class="qr-corner qr-bl"></div>
+        <div class="qr-corner qr-br"></div>
+      </div>
+    </div>
+    <p class="qr-hint">Apunta la cámara al código QR de tu pedido</p>
+    <div id="qr-status" class="qr-status"></div>
+  </div>
+</div>
+
+</body>
+</html>
